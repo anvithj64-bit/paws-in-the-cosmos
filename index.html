@@ -21,7 +21,7 @@
 <body>
 
 <h2>PAWS IN THE COSMOS</h2>
-<p>Arrow keys to move your cosmic paw!</p>
+<p>Arrow keys to move your cosmic paw! Tap or click to start on mobile.</p>
 
 <canvas id="game" width="800" height="450"></canvas>
 
@@ -34,6 +34,7 @@ const ctx = canvas.getContext("2d");
 let state = "menu"; 
 let lastTime = 0;
 let score = 0;
+let highScore = 0; // Tracks high score in this session
 
 // Player
 const player = { x:400, y:320, r:20, speed:260 };
@@ -63,16 +64,11 @@ function spawnPlanet(){
 }
 setInterval(()=>{ if(state==="playing") spawnPlanet(); },900);
 
-// ===== Sounds (Base64 embedded) =====
-// Short placeholder WAV sounds (offline ready)
-// Meow: small sound on start/restart
-// Real meow (short)
+// ===== Sounds (placeholder WAV) =====
 const meowSound = new Audio(
-"data:audio/wav;base64,UklGRmQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQAAAAA...");
-
-// Impact sound
+"data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
 const hitSound = new Audio(
-"data:audio/wav;base64,UklGRlgAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQAAAAA...");
+"data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
 
 // ===== Collision =====
 function collide(a,b){
@@ -99,6 +95,16 @@ function drawPaw(x,y,r,color){
   ctx.shadowBlur=0;
 }
 
+// ===== Start Game Function =====
+function startGame() {
+  state = "playing";
+  score = 0;
+  planets = [];
+  player.x = canvas.width/2;
+  player.y = canvas.height - 100;
+  meowSound.play();
+}
+
 // ===== Game Loop =====
 function loop(time){
   const dt = (time-lastTime)/1000;
@@ -118,7 +124,7 @@ function loop(time){
     ctx.font="48px Orbitron";
     ctx.fillText("PAWS IN THE COSMOS",100,200);
     ctx.font="28px Orbitron";
-    ctx.fillText("Press ENTER to Start",250,260);
+    ctx.fillText("Tap or Press ENTER to Start",200,260);
   }
 
   else if(state==="playing"){
@@ -151,9 +157,14 @@ function loop(time){
 
     // Score
     score += dt*10;
+
+    // Update high score
+    if(score > highScore) highScore = score;
+
     ctx.fillStyle="white";
     ctx.font="20px Orbitron";
     ctx.fillText("Score: "+Math.floor(score),15,25);
+    ctx.fillText("High Score: "+Math.floor(highScore),15,50);
   }
 
   else if(state==="gameover"){
@@ -164,24 +175,27 @@ function loop(time){
     ctx.fillText("GAME OVER",250,200);
     ctx.font="28px Orbitron";
     ctx.fillText("Score: "+Math.floor(score),340,250);
-    ctx.fillText("Press ENTER to Restart",220,300);
+    ctx.fillText("High Score: "+Math.floor(highScore),340,280);
+    ctx.fillText("Tap or Press ENTER to Restart",170,330);
   }
 
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-// ===== Keyboard to switch states =====
-window.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
+// ===== Keyboard to start/restart =====
+window.addEventListener("keydown", e => {
+  if(e.key === "Enter") {
     if(state==="menu" || state==="gameover"){
-      state="playing";
-      score=0;
-      planets=[];
-      player.x=400;
-      player.y=320;
-      meowSound.play();
+      startGame();
     }
+  }
+});
+
+// ===== Mobile / Click Support =====
+canvas.addEventListener("click", () => {
+  if(state==="menu" || state==="gameover"){
+    startGame();
   }
 });
 </script>
