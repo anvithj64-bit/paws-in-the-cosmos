@@ -1,202 +1,221 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Paws in the Cosmos</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
-  body { 
-    margin:0; 
-    background:black; 
-    color:white; 
-    text-align:center; 
-    font-family: 'Orbitron', sans-serif; 
-  }
-  canvas { 
-    display:block; 
-    margin:auto; 
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: black;
+  overflow: hidden;
+  font-family: 'Orbitron', sans-serif;
+  color: white;
+}
+canvas {
+  display: block;
+}
 </style>
 </head>
+
 <body>
 
-<h2>PAWS IN THE COSMOS</h2>
-<p>Arrow keys to move your cosmic paw! Tap or click to start on mobile.</p>
-
-<canvas id="game" width="800" height="450"></canvas>
+<canvas id="game"></canvas>
 
 <script>
-// ===== Canvas & Context =====
+// ================== CANVAS ==================
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// ===== Game State =====
-let state = "menu"; 
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
+
+// ================== GAME STATE ==================
+let state = "menu";
 let lastTime = 0;
 let score = 0;
-let highScore = 0; // Tracks high score in this session
+let highScore = 0;
 
-// Player
-const player = { x:400, y:320, r:20, speed:260 };
+// ================== PLAYER ==================
+const player = {
+  x: canvas.width / 2,
+  y: canvas.height - 120,
+  r: 22,
+  speed: 420
+};
 
-// Input
+// ================== INPUT ==================
 const keys = {};
 window.addEventListener("keydown", e => keys[e.key] = true);
 window.addEventListener("keyup", e => keys[e.key] = false);
 
-// Stars
-const stars = Array.from({length:120}, () => ({
-  x: Math.random()*canvas.width,
-  y: Math.random()*canvas.height,
-  s: 20+Math.random()*40,
-  size: Math.random()*2
+// ================== STARS ==================
+const stars = Array.from({ length: 150 }, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  s: 40 + Math.random() * 80,
+  size: Math.random() * 2
 }));
 
-// Planets
+// ================== PLANETS ==================
 let planets = [];
-function spawnPlanet(){
+function spawnPlanet() {
   planets.push({
-    x: Math.random()*(canvas.width-40),
-    y:-50,
-    r:20+Math.random()*15,
-    s:140+Math.random()*120
+    x: Math.random() * canvas.width,
+    y: -60,
+    r: 18 + Math.random() * 18,
+    s: 200 + Math.random() * 200
   });
 }
-setInterval(()=>{ if(state==="playing") spawnPlanet(); },900);
+setInterval(() => {
+  if (state === "playing") spawnPlanet();
+}, 900);
 
-// ===== Sounds (placeholder WAV) =====
-const meowSound = new Audio(
-"data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
-const hitSound = new Audio(
-"data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=");
-
-// ===== Collision =====
-function collide(a,b){
-  const dx=a.x-b.x, dy=a.y-b.y;
-  return Math.sqrt(dx*dx+dy*dy)<a.r+b.r;
+// ================== COLLISION ==================
+function collide(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy) < a.r + b.r;
 }
 
-// ===== Draw Paw =====
-function drawPaw(x,y,r,color){
-  ctx.shadowBlur=10;
-  ctx.shadowColor="#00ffff";
-  ctx.fillStyle=color;
+// ================== DRAW PAW ==================
+function drawPaw(x, y, r) {
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = "#00ffff";
+  ctx.fillStyle = "#66ffff";
+
   // Main pad
   ctx.beginPath();
-  ctx.ellipse(x,y,r,r*0.6,0,0,Math.PI*2);
+  ctx.ellipse(x, y, r, r * 0.65, 0, 0, Math.PI * 2);
   ctx.fill();
+
   // Toes
-  let toes = [[-r*0.6,-r*0.8],[0,-r*0.9],[r*0.6,-r*0.8],[-r*0.4,-r*0.2]];
-  toes.forEach(o=>{
+  const toes = [
+    [-r * 0.7, -r * 0.9],
+    [0, -r * 1.1],
+    [r * 0.7, -r * 0.9],
+    [-r * 0.35, -r * 0.35]
+  ];
+  toes.forEach(t => {
     ctx.beginPath();
-    ctx.ellipse(x+o[0],y+o[1],r*0.3,r*0.3,0,0,Math.PI*2);
+    ctx.ellipse(x + t[0], y + t[1], r * 0.35, r * 0.35, 0, 0, Math.PI * 2);
     ctx.fill();
   });
-  ctx.shadowBlur=0;
+
+  ctx.shadowBlur = 0;
 }
 
-// ===== Start Game Function =====
+// ================== START GAME ==================
 function startGame() {
   state = "playing";
   score = 0;
   planets = [];
-  player.x = canvas.width/2;
-  player.y = canvas.height - 100;
-  meowSound.play();
+  player.x = canvas.width / 2;
+  player.y = canvas.height - 120;
 }
 
-// ===== Game Loop =====
-function loop(time){
-  const dt = (time-lastTime)/1000;
-  lastTime=time;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+// ================== GAME LOOP ==================
+function loop(time) {
+  const dt = (time - lastTime) / 1000;
+  lastTime = time;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Stars
-  ctx.fillStyle="white";
-  stars.forEach(s=>{
-    s.y += s.s*dt;
-    if(s.y>canvas.height) s.y=0;
-    ctx.fillRect(s.x,s.y,s.size,s.size);
+  ctx.fillStyle = "white";
+  stars.forEach(s => {
+    s.y += s.s * dt;
+    if (s.y > canvas.height) s.y = 0;
+    ctx.fillRect(s.x, s.y, s.size, s.size);
   });
 
-  if(state==="menu"){
-    ctx.fillStyle="white";
-    ctx.font="48px Orbitron";
-    ctx.fillText("PAWS IN THE COSMOS",100,200);
-    ctx.font="28px Orbitron";
-    ctx.fillText("Tap or Press ENTER to Start",200,260);
+  if (state === "menu") {
+    ctx.textAlign = "center";
+    ctx.font = "48px Orbitron";
+    ctx.fillText("PAWS IN THE COSMOS", canvas.width / 2, canvas.height / 2 - 40);
+    ctx.font = "22px Orbitron";
+    ctx.fillText("Tap Anywhere to Start", canvas.width / 2, canvas.height / 2 + 20);
   }
 
-  else if(state==="playing"){
-    if(keys.ArrowLeft) player.x -= player.speed*dt;
-    if(keys.ArrowRight) player.x += player.speed*dt;
-    if(keys.ArrowUp) player.y -= player.speed*dt;
-    if(keys.ArrowDown) player.y += player.speed*dt;
-    player.x = Math.max(player.r,Math.min(canvas.width-player.r,player.x));
-    player.y = Math.max(player.r,Math.min(canvas.height-player.r,player.y));
+  if (state === "playing") {
+    // Movement
+    if (keys.ArrowLeft) player.x -= player.speed * dt;
+    if (keys.ArrowRight) player.x += player.speed * dt;
+    if (keys.ArrowUp) player.y -= player.speed * dt;
+    if (keys.ArrowDown) player.y += player.speed * dt;
+
+    // Bounds
+    player.x = Math.max(player.r, Math.min(canvas.width - player.r, player.x));
+    player.y = Math.max(player.r, Math.min(canvas.height - player.r, player.y));
 
     // Planets
-    planets.forEach(p=>{
-      p.y += p.s*dt;
-      const g=ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,p.r);
-      g.addColorStop(0,"#ffaa55");
-      g.addColorStop(1,"#552200");
-      ctx.fillStyle=g;
+    planets.forEach(p => {
+      p.y += p.s * dt;
+
+      const g = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, p.r);
+      g.addColorStop(0, "#ffcc88");
+      g.addColorStop(1, "#663300");
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
 
-      if(collide(player,p)){
-        state="gameover";
-        hitSound.play();
+      if (collide(player, p)) {
+        state = "gameover";
       }
     });
 
-    // Draw player paw
-    drawPaw(player.x,player.y,player.r,"#55ffff");
+    // Player
+    drawPaw(player.x, player.y, player.r);
 
     // Score
-    score += dt*10;
+    score += dt * 10;
+    if (score > highScore) highScore = score;
 
-    // Update high score
-    if(score > highScore) highScore = score;
-
-    ctx.fillStyle="white";
-    ctx.font="20px Orbitron";
-    ctx.fillText("Score: "+Math.floor(score),15,25);
-    ctx.fillText("High Score: "+Math.floor(highScore),15,50);
+    ctx.textAlign = "left";
+    ctx.font = "18px Orbitron";
+    ctx.fillStyle = "white";
+    ctx.fillText("Score: " + Math.floor(score), 20, 30);
+    ctx.fillText("High: " + Math.floor(highScore), 20, 55);
   }
 
-  else if(state==="gameover"){
-    ctx.fillStyle="rgba(0,0,0,0.6)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle="white";
-    ctx.font="48px Orbitron";
-    ctx.fillText("GAME OVER",250,200);
-    ctx.font="28px Orbitron";
-    ctx.fillText("Score: "+Math.floor(score),340,250);
-    ctx.fillText("High Score: "+Math.floor(highScore),340,280);
-    ctx.fillText("Tap or Press ENTER to Restart",170,330);
+  if (state === "gameover") {
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "white";
+    ctx.font = "46px Orbitron";
+    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 40);
+    ctx.font = "22px Orbitron";
+    ctx.fillText("Score: " + Math.floor(score), canvas.width / 2, canvas.height / 2 + 5);
+    ctx.fillText("Tap Anywhere to Restart", canvas.width / 2, canvas.height / 2 + 45);
   }
 
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-// ===== Keyboard to start/restart =====
+// ================== CONTROLS ==================
 window.addEventListener("keydown", e => {
-  if(e.key === "Enter") {
-    if(state==="menu" || state==="gameover"){
-      startGame();
-    }
+  if (e.key === "Enter" && (state === "menu" || state === "gameover")) {
+    startGame();
   }
 });
 
-// ===== Mobile / Click Support =====
-canvas.addEventListener("click", () => {
-  if(state==="menu" || state==="gameover"){
-    startGame();
-  }
+// 🔥 MOBILE FIX — TAP ANYWHERE
+document.body.addEventListener("touchstart", () => {
+  if (state === "menu" || state === "gameover") startGame();
+});
+document.body.addEventListener("click", () => {
+  if (state === "menu" || state === "gameover") startGame();
 });
 </script>
 
